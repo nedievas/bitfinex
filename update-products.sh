@@ -17,7 +17,7 @@ request('https://api.bitfinex.com/v1/symbols_details', {headers: {'User-Agent': 
       currency: product.pair.substring(3, 6).toUpperCase(),
       min_size: Number(product.minimum_order_size),
       max_size: Number(product.maximum_order_size),
-      increment: Number(product.minimum_order_size),
+      increment: 0.0001,
       label: product.pair.substring(0, 3).toUpperCase() + '/' + product.pair.substring(3, 6).toUpperCase()
     })
   })

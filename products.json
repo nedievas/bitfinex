@@ -4,7 +4,7 @@
     "currency": "USD",
     "min_size": 0.01,
     "max_size": 2000,
-    "increment": 0.01,
+    "increment": 0.0001,
     "label": "BTC/USD"
   },
   {
@@ -12,7 +12,7 @@
     "currency": "USD",
     "min_size": 0.1,
     "max_size": 5000,
-    "increment": 0.1,
+    "increment": 0.0001,
     "label": "LTC/USD"
   },
   {
@@ -20,7 +20,7 @@
     "currency": "BTC",
     "min_size": 0.1,
     "max_size": 5000,
-    "increment": 0.1,
+    "increment": 0.0001,
     "label": "LTC/BTC"
   },
   {
@@ -28,7 +28,7 @@
     "currency": "USD",
     "min_size": 0.1,
     "max_size": 5000,
-    "increment": 0.1,
+    "increment": 0.0001,
     "label": "ETH/USD"
   },
   {
@@ -36,7 +36,7 @@
     "currency": "BTC",
     "min_size": 0.1,
     "max_size": 5000,
-    "increment": 0.1,
+    "increment": 0.0001,
     "label": "ETH/BTC"
   },
   {
@@ -44,7 +44,7 @@
     "currency": "BTC",
     "min_size": 0.1,
     "max_size": 100000,
-    "increment": 0.1,
+    "increment": 0.0001,
     "label": "ETC/BTC"
   },
   {
@@ -52,7 +52,7 @@
     "currency": "USD",
     "min_size": 0.1,
     "max_size": 100000,
-    "increment": 0.1,
+    "increment": 0.0001,
     "label": "ETC/USD"
   },
   {
@@ -60,7 +60,7 @@
     "currency": "USD",
     "min_size": 0.1,
     "max_size": 100000,
-    "increment": 0.1,
+    "increment": 0.0001,
     "label": "RRT/USD"
   },
   {
@@ -68,7 +68,7 @@
     "currency": "BTC",
     "min_size": 0.1,
     "max_size": 100000,
-    "increment": 0.1,
+    "increment": 0.0001,
     "label": "RRT/BTC"
   },
   {
@@ -92,7 +92,7 @@
     "currency": "USD",
     "min_size": 0.1,
     "max_size": 5000,
-    "increment": 0.1,
+    "increment": 0.0001,
     "label": "XMR/USD"
   },
   {
@@ -100,7 +100,7 @@
     "currency": "BTC",
     "min_size": 0.1,
     "max_size": 5000,
-    "increment": 0.1,
+    "increment": 0.0001,
     "label": "XMR/BTC"
   },
   {
@@ -108,7 +108,7 @@
     "currency": "USD",
     "min_size": 0.01,
     "max_size": 5000,
-    "increment": 0.01,
+    "increment": 0.0001,
     "label": "DSH/USD"
   },
   {
@@ -116,7 +116,7 @@
     "currency": "BTC",
     "min_size": 0.01,
     "max_size": 5000,
-    "increment": 0.01,
+    "increment": 0.0001,
     "label": "DSH/BTC"
   },
   {
@@ -124,7 +124,7 @@
     "currency": "BTC",
     "min_size": 0.01,
     "max_size": 2000,
-    "increment": 0.01,
+    "increment": 0.0001,
     "label": "BCC/BTC"
   },
   {
@@ -132,7 +132,7 @@
     "currency": "BTC",
     "min_size": 0.01,
     "max_size": 2000,
-    "increment": 0.01,
+    "increment": 0.0001,
     "label": "BCU/BTC"
   },
   {
@@ -140,7 +140,7 @@
     "currency": "USD",
     "min_size": 0.01,
     "max_size": 2000,
-    "increment": 0.01,
+    "increment": 0.0001,
     "label": "BCC/USD"
   },
   {
@@ -148,7 +148,7 @@
     "currency": "USD",
     "min_size": 0.01,
     "max_size": 2000,
-    "increment": 0.01,
+    "increment": 0.0001,
     "label": "BCU/USD"
   },
   {
@@ -156,7 +156,7 @@
     "currency": "USD",
     "min_size": 0.1,
     "max_size": 200000,
-    "increment": 0.1,
+    "increment": 0.0001,
     "label": "XRP/USD"
   },
   {
@@ -164,7 +164,7 @@
     "currency": "BTC",
     "min_size": 0.1,
     "max_size": 200000,
-    "increment": 0.1,
+    "increment": 0.0001,
     "label": "XRP/BTC"
   }
 ]

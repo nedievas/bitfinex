@@ -3,9 +3,10 @@ var BFX = require('bitfinex-api-node')
   , path = require('path')
   , n = require('numbro')
 
+
 module.exports = function container (get, set, clear) {
   var c = get('conf')
-  
+
   var public_client, authed_client
 
   function publicClient () {
@@ -22,7 +23,7 @@ module.exports = function container (get, set, clear) {
   }
   return authed_client
   }
-  
+
   function joinProduct (product_id) {
     return product_id.split('-')[0] + '' + product_id.split('-')[1]
   }
@@ -37,12 +38,13 @@ module.exports = function container (get, set, clear) {
     },
 
     getTrades: function (opts, cb) {
-      var client = publicClient()      
+      var client = publicClient()
       var args = joinProduct(opts.product_id)
-//      var path = args.pair;
-//      if(opts.from)
-//        path += '?limit_trades=49999';
 /*
+      var path = args.pair;
+      if(opts.from)
+        path += '?limit_trades=49999';
+
  if (opts.from) {
         args.start = opts.from
       }
@@ -53,15 +55,11 @@ module.exports = function container (get, set, clear) {
         // add 24 hours
         args.end = args.start + 86400
       }
-      
+
       ****
       if (opts.from) {
         // move cursor into the future
-        args.before = opts.from
-      }
-      else if (opts.to) {
-        // move cursor into the past
-        args.after = opts.to
+        args.timestamp = opts.from
       }
 */
       client.trades(args, function (err, body) {
@@ -70,8 +68,8 @@ module.exports = function container (get, set, clear) {
           return {
             trade_id: trade.tid,
             time: n(trade.timestamp).multiply(1000).value(),
-            size: parseFloat(trade.amount),
-            price: parseFloat(trade.price),
+            size: Number(trade.amount),
+            price: Number(trade.price),
             side: trade.type
           }
         })
@@ -103,7 +101,7 @@ module.exports = function container (get, set, clear) {
       var pair = joinProduct(opts.product_id)
       client.ticker(pair, function (err, body) {
         if (err) return cb(err)
-        cb(null, {bid: body.bid, ask: body.ask})
+        cb(null, {bid: parseFloat(body.bid), ask: parseFloat(body.ask)})
       })
     },
 
@@ -117,31 +115,161 @@ module.exports = function container (get, set, clear) {
 
     buy: function (opts, cb) {
       var client = authedClient()
-            if (typeof opts.type === 'undefined') {
-		    opts.type = 'exchange limit'
-	    }
-      var pair = joinProduct(opts.product_id)
-      client.new_order(pair, opts.size, opts.price, 'bitfinex', 'buy', opts.type, false, function (err, body) {
-        if (err) return cb(err)
-        cb(null, body)
+      if (c.bitfinex.wallet === 'exchange' && typeof opts.type === 'undefined') {
+        opts.type = 'exchange limit'
+      }
+      else if (c.bitfinex.wallet === 'trading' && typeof opts.type === 'undefined') {
+        opts.type = 'limit'
+      }
+      var symbol = joinProduct(opts.product_id)
+      var amount = opts.size
+      var price = opts.price
+      var exchange = 'bitfinex'
+      var side = 'buy'
+      var type = opts.type
+      var is_hidden = false
+      var is_postonly = opts.post_only
+      var params = {
+        symbol,
+        amount,
+        price,
+        exchange,
+        side,
+        type,
+        is_hidden,
+        is_postonly
+      }
+      client.make_request('order/new', params, function (err, body) {
+        if (err && err.toString('Error: Invalid order: not enough exchange balance')) {
+          var order = {
+            status: 'rejected',
+            reject_reason: 'balance'
+          }
+          return cb(null, order)
+        }
+        else if (body.is_live === true) {
+          if (err) return cb(err)
+          cb(null, body)
+        }
       })
-//	    console.log(pair, opts)
     },
-
 
     sell: function (opts, cb) {
       var client = authedClient()
-	    if (typeof opts.type === 'undefined') {
-		    opts.type = 'exchange limit'
-	    }
-      var pair = joinProduct(opts.product_id)
-      client.new_order(pair, opts.size, opts.price, 'bitfinex', 'sell', opts.type, false, function (err, body) {
-         if (err) return cb(err)
-	 cb(null, body)
+      if (c.bitfinex.wallet === 'exchange' && typeof opts.type === 'undefined') {
+        opts.type = 'exchange limit'
+      }
+      else if (c.bitfinex.wallet === 'trading' && typeof opts.type === 'undefined') {
+        opts.type = 'limit'
+      }
+      var symbol = joinProduct(opts.product_id)
+      var amount = opts.size
+      var price = opts.price
+      var exchange = 'bitfinex'
+      var side = 'sell'
+      var type = opts.type
+      var is_hidden = false
+      var is_postonly = opts.post_only
+      var params = {
+        symbol,
+        amount,
+        price,
+        exchange,
+        side,
+        type,
+        is_hidden,
+        is_postonly
+      }
+      client.make_request('order/new', params, function (err, body) {
+        if (err && err.toString('Error: Invalid order: not enough exchange balance')) {
+          var order = {
+            status: 'rejected',
+            reject_reason: 'balance'
+          }
+          return cb(null, order)
+        }
+        else if (body.is_live === false) {
+          cb(null, body)
+        }
+        if (err) return cb(err)
       })
-//	    console.log(pair, opts)
     },
 
+/*
+	buy: function (opts, cb) {
+	var args = [].slice.call(arguments)
+
+	client.make_request('order/new', params, function (err, result) {
+     if (typeof result.is_live === false) {
+      return retry('trade', args)
+    }
+    var order = {
+      id: result ? result.id : null,
+      status: result.is_live ? true : false,
+      price: opts.price,
+      size: opts.size,
+      post_only: !!opts.post_only,
+      created_at: new Date().getTime(),
+      filled_size: result.executed_amount ? '0.0' : result.original_amount
+    }
+    if (result && result.error === 'Unable to place post-only order at this price.') {
+      order.status = 'rejected'
+      order.reject_reason = 'post only'
+      return cb(null, order)
+    }
+    else if (result && result.error && result.error.match(/^Not enough/)) {
+      order.status = 'rejected'
+      order.reject_reason = 'balance'
+      return cb(null, order)
+    }
+    if (!err && result.error) {
+      err = new Error('unable to ' + type)
+      err.body = result
+    }
+    if (err) return cb(err)
+//    orders['~' + result.id] = order
+    cb(null, order)
+  })
+console.log(params)
+	},
+*/
+    getOrder: function (opts, cb) {
+//      var order = opts.order_id
+      var client = authedClient()
+      client.active_orders(function (err, body) {
+        if (err) return cb(err)
+      var active = false
+      if (!body.forEach) {
+        console.error('\nActive orders result:')
+        console.error(body)
+      }
+      else {
+        body.forEach(function (api_order) {
+          if (api_order.id == opts.order_id) active = true
+          })
+        }
+        if (!active) {
+          order.status = 'done'
+          order.done_at = n(api_order.timestamp).multiply(1000).value()
+          return cb(null, order)
+        }
+        client.order_status(opts.order_id, function (err, order) {
+        if (err || !body.forEach) return cb(null, order)
+        order.filled_size = '0'
+        body.forEach(function(trade) {
+          order.filled_size = n(trade.executed_amount).format('0.00000000')
+        })
+        if (n(order.filled_size).value() == n(order.size).value()) {
+          order.status = 'done'
+          order.done_at = n(order.timestamp).multiply(1000).value()
+        }
+        cb(null, order)
+      })
+    })
+  },
+
+
+/*
     getOrder: function (opts, cb) {
       var client = authedClient()
       client.order_status(opts.order_id, function (err, body) {
@@ -150,7 +278,7 @@ module.exports = function container (get, set, clear) {
       })
 //	    console.log(opts)
     },
-
+*/
 
     // return the property used for range querying.
     getCursor: function (trade) {
