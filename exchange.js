@@ -87,7 +87,7 @@ module.exports = function container (get, set, clear) {
             balance.currency = account.amount
             balance.currency_hold = (account.amount - account.available)
           }
-          else if (account.currency === opts.asset) {
+          else if (account.currency.toUpperCase() === opts.asset) {
             balance.asset = account.amount
             balance.asset_hold = (account.amount - account.available)
           }
