@@ -1,5 +1,7 @@
-var BFX = require('bitfinex-api-node')
-  , _ = require('lodash')
+const BFX = require('bitfinex-api-node')
+const bfx = new BFX()
+const bfx_rest = bfx.rest
+var _ = require('lodash')
   , path = require('path')
   , n = require('numbro')
 
@@ -10,7 +12,7 @@ module.exports = function container (get, set, clear) {
   var public_client, authed_client
 
   function publicClient () {
-    if (!public_client) public_client = new BFX.APIRest()
+    if (!public_client) public_client = bfx_rest
     return public_client
   }
 
@@ -19,7 +21,7 @@ module.exports = function container (get, set, clear) {
     if (!c.bitfinex.key || c.bitfinex.key === 'YOUR-API-KEY') {
       throw new Error('please configure your Bitfinex credentials in ' + path.resolve(__dirname, 'conf.js'))
     }
-    authed_client = new BFX.APIRest(c.bitfinex.key, c.bitfinex.secret)
+    authed_client = bfx_rest(c.bitfinex.key, c.bitfinex.secret)
   }
   return authed_client
   }
