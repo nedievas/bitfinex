@@ -101,7 +101,7 @@ module.exports = function container (get, set, clear) {
       var pair = joinProduct(opts.product_id)
       client.ticker(pair, function (err, body) {
         if (err) return cb(err)
-        cb(null, {bid: parseFloat(body.bid), ask: parseFloat(body.ask)})
+        cb(null, {bid: body.bid, ask: body.ask})
       })
     },
 
@@ -267,7 +267,6 @@ console.log(params)
       })
     })
   },
-
 
 /*
     getOrder: function (opts, cb) {
