@@ -166,10 +166,10 @@ module.exports = function container (get, set, clear) {
           }
           return cb(null, order)
         }
-        else if (body.is_live === false) {
+        else if (body.is_live === true) {
+          if (err) return cb(err)
           cb(null, body)
         }
-        if (err) return cb(err)
       })
     },
 
