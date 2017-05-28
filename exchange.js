@@ -40,28 +40,6 @@ module.exports = function container (get, set, clear) {
     getTrades: function (opts, cb) {
       var client = publicClient()
       var args = joinProduct(opts.product_id)
-/*
-      var path = args.pair;
-      if(opts.from)
-        path += '?limit_trades=49999';
-
- if (opts.from) {
-        args.start = opts.from
-      }
-      if (opts.to) {
-        args.end = opts.to
-      }
-      if (args.start && !args.end) {
-        // add 24 hours
-        args.end = args.start + 86400
-      }
-
-      ****
-      if (opts.from) {
-        // move cursor into the future
-        args.timestamp = opts.from
-      }
-*/
       client.trades(args, function (err, body) {
         if (err) return cb(err)
         var trades = body.map(function(trade) {
@@ -195,46 +173,7 @@ module.exports = function container (get, set, clear) {
       })
     },
 
-/*
-	buy: function (opts, cb) {
-	var args = [].slice.call(arguments)
-
-	client.make_request('order/new', params, function (err, result) {
-     if (typeof result.is_live === false) {
-      return retry('trade', args)
-    }
-    var order = {
-      id: result ? result.id : null,
-      status: result.is_live ? true : false,
-      price: opts.price,
-      size: opts.size,
-      post_only: !!opts.post_only,
-      created_at: new Date().getTime(),
-      filled_size: result.executed_amount ? '0.0' : result.original_amount
-    }
-    if (result && result.error === 'Unable to place post-only order at this price.') {
-      order.status = 'rejected'
-      order.reject_reason = 'post only'
-      return cb(null, order)
-    }
-    else if (result && result.error && result.error.match(/^Not enough/)) {
-      order.status = 'rejected'
-      order.reject_reason = 'balance'
-      return cb(null, order)
-    }
-    if (!err && result.error) {
-      err = new Error('unable to ' + type)
-      err.body = result
-    }
-    if (err) return cb(err)
-//    orders['~' + result.id] = order
-    cb(null, order)
-  })
-console.log(params)
-	},
-*/
     getOrder: function (opts, cb) {
-//      var order = opts.order_id
       var client = authedClient()
       client.active_orders(function (err, body) {
         if (err) return cb(err)
@@ -267,17 +206,6 @@ console.log(params)
       })
     })
   },
-
-/*
-    getOrder: function (opts, cb) {
-      var client = authedClient()
-      client.order_status(opts.order_id, function (err, body) {
-        if (err) return cb(err)
-        cb(null, body)
-      })
-//	    console.log(opts)
-    },
-*/
 
     // return the property used for range querying.
     getCursor: function (trade) {
