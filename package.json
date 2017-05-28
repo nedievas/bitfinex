@@ -1,6 +1,6 @@
 {
   "name": "zenbot_bitfinex",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "zenbot supporting code for Bitfinex",
   "dependencies": {
     "bitfinex-api-node": "^0.2.9"
