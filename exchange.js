@@ -3,14 +3,13 @@ var _ = require('lodash')
   , path = require('path')
   , n = require('numbro')
 
-
 module.exports = function container (get, set, clear) {
   var c = get('conf')
 
   var public_client, authed_client
 
   function publicClient () {
-    if (!public_client) public_client = new BFX.APIRest()
+    if (!public_client) public_client = new BFX(null,null, {version: 1}).rest
     return public_client
   }
 
@@ -19,19 +18,28 @@ module.exports = function container (get, set, clear) {
     if (!c.bitfinex.key || c.bitfinex.key === 'YOUR-API-KEY') {
       throw new Error('please configure your Bitfinex credentials in ' + path.resolve(__dirname, 'conf.js'))
     }
-    authed_client = new BFX.APIRest(c.bitfinex.key, c.bitfinex.secret)
+    authed_client = new BFX(c.bitfinex.key, c.bitfinex.secret, {version: 1}).rest
   }
   return authed_client
   }
-
 
   function joinProduct (product_id) {
     return product_id.split('-')[0] + '' + product_id.split('-')[1]
   }
 
-  return {
+  function retry (method, args) {
+    if (method !== 'getTrades') {
+      console.error(('\nBitfinex API is down! unable to call ' + method + ', retrying in 10s').red)
+    }
+    setTimeout(function () {
+      exchange[method].apply(exchange, args)
+    }, 10000)
+  }
+
+  var orders = {}
+  var exchange = {
     name: 'bitfinex',
-//    historyScan: 'backward',
+  //    historyScan: 'backward',
     makerFee: 0.1,
 
     getProducts: function () {
@@ -39,10 +47,11 @@ module.exports = function container (get, set, clear) {
     },
 
     getTrades: function (opts, cb) {
+      var func_args = [].slice.call(arguments)
       var client = publicClient()
       var args = joinProduct(opts.product_id)
       client.trades(args, function (err, body) {
-        if (err) return cb(err)
+        if (err) return retry('getTrades', func_args, err)
         var trades = body.map(function(trade) {
           return {
             trade_id: trade.tid,
@@ -57,9 +66,10 @@ module.exports = function container (get, set, clear) {
     },
 
     getBalance: function (opts, cb) {
+      var func_args = [].slice.call(arguments)
       var client = authedClient()
       client.wallet_balances(function (err, body) {
-        if (err) return cb(err)
+        if (err) return retry('getBalance', func_args, err)
         var balance = {asset: 0, currency: 0}
         var accounts = _(body).filter(function (body) { return body.type === c.bitfinex.wallet }).forEach(function (account) {
           if (account.currency.toUpperCase() === opts.currency) {
@@ -76,23 +86,26 @@ module.exports = function container (get, set, clear) {
     },
 
     getQuote: function (opts, cb) {
+      var func_args = [].slice.call(arguments)
       var client = publicClient()
       var pair = joinProduct(opts.product_id)
       client.ticker(pair, function (err, body) {
-        if (err) return cb(err)
-        cb(null, {bid: body.bid, ask: body.ask})
+        if (err) return retry('getQuote', func_args, err)
+        cb(null, { bid : body.bid, ask : body.ask })
       })
     },
 
     cancelOrder: function (opts, cb) {
+      var func_args = [].slice.call(arguments)
       var client = authedClient()
       client.cancel_order(opts.order_id, function (err, body) {
-        if (err) return cb(err)
+        if (err) return retry('cancelOrder', func_args, err)
         cb()
       })
     },
 
     buy: function (opts, cb) {
+      var func_args = [].slice.call(arguments)
       var client = authedClient()
       if (c.bitfinex.wallet === 'exchange' && typeof opts.type === 'undefined') {
         opts.type = 'exchange limit'
@@ -119,21 +132,28 @@ module.exports = function container (get, set, clear) {
         is_postonly
       }
       client.make_request('order/new', params, function (err, body) {
-        if (err && err.toString('Error: Invalid order: not enough exchange balance')) {
-          var order = {
-            status: 'rejected',
-            reject_reason: 'balance'
-          }
+        var order = {
+          id: body && body.is_live === true ? body.id : null,
+          status: 'open',
+          price: opts.price,
+          size: opts.size,
+          post_only: !!opts.post_only,
+          created_at: new Date().getTime(),
+          filled_size: '0'
+        }
+        if (err && err.match(/Error: Invalid order: not enough exchange balance$/)) {
+          status: 'rejected'
+          reject_reason: 'balance'
           return cb(null, order)
         }
-        else if (body.is_live === true) {
-          if (err) return cb(err)
-          cb(null, body)
-        }
+        if (err) return retry('buy', func_args, err)
+        orders['~' + body.id] = order
+        cb(null, order)
       })
     },
 
     sell: function (opts, cb) {
+      var func_args = [].slice.call(arguments)
       var client = authedClient()
       if (c.bitfinex.wallet === 'exchange' && typeof opts.type === 'undefined') {
         opts.type = 'exchange limit'
@@ -160,57 +180,55 @@ module.exports = function container (get, set, clear) {
         is_postonly
       }
       client.make_request('order/new', params, function (err, body) {
-        if (err && err.toString('Error: Invalid order: not enough exchange balance')) {
-          var order = {
-            status: 'rejected',
-            reject_reason: 'balance'
-          }
+        var order = {
+          id: body && body.is_live === true ? body.id : null,
+          status: 'open',
+          price: opts.price,
+          size: opts.size,
+          post_only: !!opts.post_only,
+          created_at: new Date().getTime(),
+          filled_size: '0'
+        }
+        if (err && err.match(/Error: Invalid order: not enough exchange balance$/)) {
+          status: 'rejected'
+          reject_reason: 'balance'
           return cb(null, order)
         }
-        else if (body.is_live === true) {
-          if (err) return cb(err)
-          cb(null, body)
-        }
+        if (err) return retry('sell', func_args, err)
+        orders['~' + body.id] = order
+        cb(null, order)
       })
     },
 
     getOrder: function (opts, cb) {
+      var func_args = [].slice.call(arguments)
+      var order = orders['~' + opts.order_id]
       var client = authedClient()
-      client.active_orders(function (err, body) {
-        if (err) return cb(err)
-      var active = false
-      if (!body.forEach) {
-        console.error('\nActive orders result:')
-        console.error(body)
-      }
-      else {
-        body.forEach(function (api_order) {
-          if (api_order.id == opts.order_id) active = true
-          })
+      client.order_status(opts.order_id, function (err, body) {
+        if (err) return retry('getOrder', func_args, err)
+        if (!body.id) {
+          return cb('Order not found')
         }
-        if (!active) {
-          order.status = 'done'
-          order.done_at = n(api_order.timestamp).multiply(1000).value()
+        if (body.is_cancelled  === true && body.is_live === false) {
+          order.status = 'rejected'
+          order.reject_reason = 'post only'
+          order.done_at = new Date().getTime()
           return cb(null, order)
         }
-        client.order_status(opts.order_id, function (err, order) {
-        if (err || !body.forEach) return cb(null, order)
-        order.filled_size = '0'
-        body.forEach(function(trade) {
-          order.filled_size = n(trade.executed_amount).format('0.00000000')
-        })
-        if (n(order.filled_size).value() == n(order.size).value()) {
+        if (body.is_live === false) {
           order.status = 'done'
-          order.done_at = n(order.timestamp).multiply(1000).value()
+          order.done_at = new Date().getTime()
+          order.filled_size = body.original_amount - body.executed_amount
+          return cb(null, order)
         }
         cb(null, order)
       })
-    })
-  },
+    },
 
     // return the property used for range querying.
     getCursor: function (trade) {
       return trade.trade_id
     }
   }
-}
+  return exchange
+  }
